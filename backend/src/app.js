@@ -4,14 +4,9 @@
 // Purpose:
 //   Express application entry point. Loads env, registers global
 //   middleware, mounts all API routes under /api, serves uploaded
-//   media in development, connects to MongoDB, and starts the
-//   HTTP server. Handles graceful shutdown.
-//
-// Conventions:
-//   - All routes mounted via ./routes/index.js at /api
-//   - Global middleware order: helmet → cors → body → cookie
-//     → rate limit → static uploads → routes → notFound → errors
-//   - Business logic lives in controllers, not here
+//   media in development, connects to MongoDB, starts the HTTP
+//   server and the viewing-sweep cron job. Handles graceful
+//   shutdown.
 // =============================================================
 
 'use strict';
@@ -31,16 +26,16 @@ const apiRoutes = require('./routes');
 const notFound = require('./middleware/notFound');
 const errorHandler = require('./middleware/errorHandler');
 const logger = require('./utils/logger');
+const viewingSweepCron = require('./jobs/viewingSweepCron');
 
 const app = express();
 
-// Trust proxy in production so req.ip reflects the client
 if (env.isProd) app.set('trust proxy', 1);
 
 // ----- Security headers --------------------------------------
 app.use(
   helmet({
-    crossOriginResourcePolicy: { policy: 'cross-origin' }, // allows images to be served cross-origin
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
   })
 );
 
@@ -70,7 +65,6 @@ app.use(
 );
 
 // ----- Static uploads (dev only) -----------------------------
-// In production this is served by a CDN / object storage.
 if (env.isDev) {
   app.use(
     '/uploads',
@@ -97,8 +91,12 @@ async function start() {
     logger.info('API listening', { port: env.PORT, env: env.NODE_ENV });
   });
 
+  // Start the receipt-review sweep job.
+  viewingSweepCron.start();
+
   const shutdown = async (signal) => {
     logger.info('Shutting down', { signal });
+    viewingSweepCron.stop();
     server.close(async () => {
       await disconnectDB();
       process.exit(0);

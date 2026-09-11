@@ -3,7 +3,7 @@
 // =============================================================
 // Purpose:
 //   Per-route rate limiters (spec §17). Stricter than the global
-//   limit for auth, uploads, and enquiry endpoints.
+//   limit for auth, uploads, enquiries, and bookings.
 // =============================================================
 
 'use strict';
@@ -36,7 +36,27 @@ const inquiryLimiter = rateLimit({
   ...standard,
 });
 
-module.exports = { authLimiter, uploadLimiter, inquiryLimiter };
+const bookingLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 10,
+  message: { error: 'Too many booking attempts. Try again later.' },
+  ...standard,
+});
+
+const markViewedLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 120,
+  message: { error: 'Too many requests. Slow down.' },
+  ...standard,
+});
+
+module.exports = {
+  authLimiter,
+  uploadLimiter,
+  inquiryLimiter,
+  bookingLimiter,
+  markViewedLimiter,
+};
 
 // =============================================================
 // END OF FILE: backend/src/middleware/rateLimiters.js
