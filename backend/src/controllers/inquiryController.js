@@ -2,8 +2,9 @@
 // FILE: backend/src/controllers/inquiryController.js
 // =============================================================
 // Purpose:
-//   Buyer → seller enquiry flow (spec §8). Buyers see their own
-//   enquiries; sellers see enquiries for their listings only.
+//   Buyer → seller enquiry flow (spec §8). Sends a best-effort
+//   email to the seller when a new enquiry is created (the
+//   emailService stub logs to console in dev).
 // =============================================================
 
 'use strict';
@@ -11,9 +12,12 @@
 const crypto = require('crypto');
 const Inquiry = require('../models/Inquiry');
 const Vehicle = require('../models/Vehicle');
+const User = require('../models/User');
 const asyncHandler = require('../utils/asyncHandler');
 const ApiError = require('../utils/ApiError');
 const { parsePagination, paginatedResponse } = require('../utils/pagination');
+const emailService = require('../services/emailService');
+const logger = require('../utils/logger');
 
 function hashIp(ip) {
   return crypto.createHash('sha256').update(String(ip || '')).digest('hex').slice(0, 32);
@@ -23,7 +27,9 @@ const createInquiry = asyncHandler(async (req, res) => {
   const { vehicleId } = req.params;
   const { name, email, phone, preferredContact, message } = req.body;
 
-  const vehicle = await Vehicle.findById(vehicleId).select('seller status');
+  const vehicle = await Vehicle.findById(vehicleId)
+    .select('seller status make model year')
+    .lean();
   if (!vehicle) throw ApiError.notFound('Vehicle not found');
   if (vehicle.status !== 'published') throw ApiError.badRequest('Vehicle not available');
 
@@ -44,8 +50,48 @@ const createInquiry = asyncHandler(async (req, res) => {
 
   await Vehicle.updateOne({ _id: vehicleId }, { $inc: { 'stats.enquiries': 1 } });
 
+  // Best-effort seller notification. Failure does not block the response.
+  notifySeller(vehicle, inquiry).catch((err) => {
+    logger.warn('Inquiry notification failed (non-fatal)', {
+      inquiryId: String(inquiry._id),
+      reason: err.message,
+    });
+  });
+
   res.status(201).json({ data: { _id: inquiry._id, status: inquiry.status } });
 });
+
+async function notifySeller(vehicle, inquiry) {
+  const seller = await User.findById(vehicle.seller)
+    .select('name email contactPreferences')
+    .lean();
+  if (!seller || !seller.email) return;
+  if (seller.contactPreferences && seller.contactPreferences.emailNotifications === false) return;
+
+  const vehicleLabel = `${vehicle.year || ''} ${vehicle.make || ''} ${vehicle.model || ''}`.trim();
+
+  const text = [
+    `New enquiry about your listing: ${vehicleLabel}`,
+    '',
+    `From:   ${inquiry.name}`,
+    `Email:  ${inquiry.email}`,
+    inquiry.phone ? `Phone:  ${inquiry.phone}` : null,
+    `Prefers: ${inquiry.preferredContact || 'any'}`,
+    '',
+    'Message:',
+    inquiry.message,
+    '',
+    `— Reply from your seller dashboard`,
+  ]
+    .filter(Boolean)
+    .join('\n');
+
+  await emailService.send({
+    to: seller.email,
+    subject: `New enquiry — ${vehicleLabel}`,
+    text,
+  });
+}
 
 // Seller inbox
 const listMyInquiries = asyncHandler(async (req, res) => {

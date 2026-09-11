@@ -3,16 +3,6 @@
 // =============================================================
 // Purpose:
 //   Mongoose schema for a vehicle listing (spec §6).
-//
-// Monetary handling:
-//   priceAmount is an INTEGER in MINOR units (KES cents, USD
-//   cents). priceCurrency stores the original currency. Never
-//   convert on write; conversion is a display concern.
-//
-// Image handling:
-//   image references are stored as subdocuments with a server-
-//   generated storage key. Original filenames are never used
-//   as paths (spec §7, §18).
 // =============================================================
 
 'use strict';
@@ -35,8 +25,8 @@ const STATUS = [
 
 const vehicleImageSchema = new Schema(
   {
-    storageKey: { type: String, required: true }, // random key, not original filename
-    url: { type: String, required: true },        // public URL
+    storageKey: { type: String, required: true },
+    url: { type: String, required: true },
     width: { type: Number, default: 0 },
     height: { type: Number, default: 0 },
     sizeBytes: { type: Number, default: 0 },
@@ -49,7 +39,6 @@ const vehicleImageSchema = new Schema(
 
 const vehicleSchema = new Schema(
   {
-    // ----- Owner ----------------------------------------------
     seller: {
       type: Schema.Types.ObjectId,
       ref: 'User',
@@ -57,7 +46,6 @@ const vehicleSchema = new Schema(
       index: true,
     },
 
-    // ----- Identification -------------------------------------
     make: { type: String, required: true, trim: true, index: true },
     model: { type: String, required: true, trim: true, index: true },
     trim: { type: String, trim: true, default: '' },
@@ -69,7 +57,6 @@ const vehicleSchema = new Schema(
       index: true,
     },
 
-    // ----- Pricing (original currency, minor units) -----------
     priceAmount: { type: Number, required: true, min: 0, index: true },
     priceCurrency: {
       type: String,
@@ -79,40 +66,36 @@ const vehicleSchema = new Schema(
     },
     negotiable: { type: Boolean, default: false },
 
-    // ----- Usage ----------------------------------------------
     mileage: { type: Number, required: true, min: 0 },
     mileageUnit: { type: String, enum: ['km', 'mi'], default: 'km' },
 
-    // ----- Classification -------------------------------------
     condition: { type: String, enum: CONDITION, default: 'used' },
     bodyType: { type: String, enum: BODY_TYPE, default: 'sedan', index: true },
     fuelType: { type: String, enum: FUEL_TYPE, default: 'petrol', index: true },
     transmission: { type: String, enum: TRANSMISSION, default: 'automatic' },
 
-    // ----- Location -------------------------------------------
     location: {
       country: { type: String, default: 'Kenya', trim: true },
       county: { type: String, trim: true, default: '', index: true },
       city: { type: String, trim: true, default: '' },
     },
 
-    // ----- Content --------------------------------------------
     description: { type: String, trim: true, default: '', maxlength: 5000 },
     features: { type: [String], default: [] },
 
-    // ----- Images ---------------------------------------------
     images: { type: [vehicleImageSchema], default: [] },
 
-    // ----- Lifecycle / moderation -----------------------------
     status: { type: String, enum: STATUS, default: 'draft', index: true },
+
+    // Admin curation flag (spec §10 "Manage featured listings").
+    featured: { type: Boolean, default: false, index: true },
 
     moderation: {
       reviewedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
       reviewedAt: { type: Date, default: null },
-      reason: { type: String, trim: true, default: '' }, // internal only
+      reason: { type: String, trim: true, default: '' },
     },
 
-    // Denormalized counters for feed + sort performance
     stats: {
       views: { type: Number, default: 0 },
       favorites: { type: Number, default: 0 },
@@ -128,7 +111,6 @@ const vehicleSchema = new Schema(
   }
 );
 
-// Text index for keyword search (spec §11)
 vehicleSchema.index({
   make: 'text',
   model: 'text',
@@ -136,15 +118,12 @@ vehicleSchema.index({
   description: 'text',
 });
 
-// Feed: newest published
 vehicleSchema.index({ status: 1, publishedAt: -1 });
-
-// Filter combinations
+vehicleSchema.index({ status: 1, featured: 1, publishedAt: -1 });
 vehicleSchema.index({ status: 1, make: 1, model: 1 });
 vehicleSchema.index({ status: 1, 'location.county': 1 });
 vehicleSchema.index({ status: 1, priceAmount: 1 });
 
-// Soft-delete filter — Mongoose 8 syntax
 vehicleSchema.pre(/^find/, function excludeDeleted() {
   if (!this.getOptions().includeDeleted) {
     this.where({ deletedAt: null });

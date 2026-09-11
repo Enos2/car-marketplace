@@ -11,7 +11,14 @@ const { body, param } = require('express-validator');
 
 const moderateVehicleRules = [
   param('id').isMongoId(),
-  body('action').isIn(['approve', 'reject', 'remove', 'feature', 'unfeature']),
+  body('action').isIn([
+    'approve',
+    'reject',
+    'remove',
+    'restore',
+    'feature',
+    'unfeature',
+  ]),
   body('reason').optional().isString().trim().isLength({ max: 500 }),
 ];
 

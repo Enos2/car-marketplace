@@ -33,16 +33,18 @@ async function writeAudit(req, action, targetType, targetId, metadata = {}) {
 // ---------- dashboard ----------------------------------------
 
 const dashboard = asyncHandler(async (req, res) => {
-  const [pending, published, sold, users, openReports, newInquiries] = await Promise.all([
-    Vehicle.countDocuments({ status: 'pending' }),
-    Vehicle.countDocuments({ status: 'published' }),
-    Vehicle.countDocuments({ status: 'sold' }),
-    User.countDocuments({ status: 'active' }),
-    Report.countDocuments({ status: 'open' }),
-    Inquiry.countDocuments({ status: 'new' }),
-  ]);
+  const [pending, published, sold, users, openReports, newInquiries, featured] =
+    await Promise.all([
+      Vehicle.countDocuments({ status: 'pending' }),
+      Vehicle.countDocuments({ status: 'published' }),
+      Vehicle.countDocuments({ status: 'sold' }),
+      User.countDocuments({ status: 'active' }),
+      Report.countDocuments({ status: 'open' }),
+      Inquiry.countDocuments({ status: 'new' }),
+      Vehicle.countDocuments({ featured: true, status: 'published' }),
+    ]);
   res.json({
-    data: { pending, published, sold, users, openReports, newInquiries },
+    data: { pending, published, sold, users, openReports, newInquiries, featured },
   });
 });
 
@@ -51,7 +53,15 @@ const dashboard = asyncHandler(async (req, res) => {
 const listListings = asyncHandler(async (req, res) => {
   const p = parsePagination(req.query);
   const filter = {};
+
+  // Admin list may include removed items; pass includeDeleted when
+  // the caller wants to see soft-deleted vehicles.
+  if (req.query.includeDeleted === 'true') {
+    filter.deletedAt = { $ne: null };
+  }
   if (req.query.status) filter.status = req.query.status;
+  if (req.query.featured === 'true') filter.featured = true;
+  if (req.query.featured === 'false') filter.featured = false;
   if (req.query.q) {
     filter.$or = [
       { make: new RegExp(req.query.q, 'i') },
@@ -59,13 +69,19 @@ const listListings = asyncHandler(async (req, res) => {
     ];
   }
 
+  const query = Vehicle.find(filter)
+    .sort({ createdAt: -1 })
+    .skip(p.skip)
+    .limit(p.limit)
+    .populate('seller', 'name email role')
+    .lean();
+
+  if (req.query.includeDeleted === 'true') {
+    query.setOptions({ includeDeleted: true });
+  }
+
   const [items, total] = await Promise.all([
-    Vehicle.find(filter)
-      .sort({ createdAt: -1 })
-      .skip(p.skip)
-      .limit(p.limit)
-      .populate('seller', 'name email role')
-      .lean(),
+    query,
     Vehicle.countDocuments(filter),
   ]);
   res.json(paginatedResponse(items, total, p));
@@ -93,8 +109,14 @@ const moderateVehicle = asyncHandler(async (req, res) => {
       vehicle.deletedAt = new Date();
       break;
     case 'feature':
+      vehicle.featured = true;
+      break;
     case 'unfeature':
-      // Reserved for a future `featured` flag; logged only.
+      vehicle.featured = false;
+      break;
+    case 'restore':
+      vehicle.status = 'published';
+      vehicle.deletedAt = null;
       break;
     default:
       throw ApiError.badRequest('Unknown action');
@@ -142,9 +164,13 @@ const setUserStatus = asyncHandler(async (req, res) => {
   user.status = status;
   await user.save();
 
-  await writeAudit(req, `user.${status === 'suspended' ? 'suspend' : 'reactivate'}`, 'user', user._id, {
-    reason,
-  });
+  await writeAudit(
+    req,
+    `user.${status === 'suspended' ? 'suspend' : 'reactivate'}`,
+    'user',
+    user._id,
+    { reason }
+  );
 
   res.json({ data: user.toJSON() });
 });

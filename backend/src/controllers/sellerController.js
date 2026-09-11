@@ -2,8 +2,8 @@
 // FILE: backend/src/controllers/sellerController.js
 // =============================================================
 // Purpose:
-//   Public seller profile reads + own profile update.
-//   Public endpoint exposes only fields the seller has enabled.
+//   Public seller profile reads + own profile update + seller
+//   dashboard analytics (spec §9).
 // =============================================================
 
 'use strict';
@@ -12,9 +12,13 @@ const mongoose = require('mongoose');
 const User = require('../models/User');
 const SellerProfile = require('../models/SellerProfile');
 const Vehicle = require('../models/Vehicle');
+const Inquiry = require('../models/Inquiry');
+const Viewing = require('../models/Viewing');
 const asyncHandler = require('../utils/asyncHandler');
 const ApiError = require('../utils/ApiError');
 const { parsePagination, paginatedResponse } = require('../utils/pagination');
+
+// -------- public reads ---------------------------------------
 
 const getPublicSeller = asyncHandler(async (req, res) => {
   const { id } = req.params;
@@ -59,6 +63,8 @@ const getPublicSellerVehicles = asyncHandler(async (req, res) => {
   res.json(paginatedResponse(items, total, p));
 });
 
+// -------- own profile ----------------------------------------
+
 const getMyProfile = asyncHandler(async (req, res) => {
   const profile = await SellerProfile.findOne({ user: req.userId }).lean();
   res.json({ data: profile || null });
@@ -77,7 +83,6 @@ const updateMyProfile = asyncHandler(async (req, res) => {
     { new: true, upsert: true }
   );
 
-  // Contact preferences live on User
   if (req.body.contactPreferences && typeof req.body.contactPreferences === 'object') {
     const cp = req.body.contactPreferences;
     const cpAllowed = [
@@ -99,11 +104,89 @@ const updateMyProfile = asyncHandler(async (req, res) => {
   res.json({ data: profile });
 });
 
+// -------- dashboard analytics (spec §9) ----------------------
+
+const getMyStats = asyncHandler(async (req, res) => {
+  const sellerId = req.userId;
+
+  // Counts by listing status
+  const [
+    totalListings,
+    drafts,
+    pending,
+    published,
+    sold,
+    totalViewsResult,
+    totalFavoritesResult,
+    totalEnquiries,
+    totalViewings,
+    pendingViewings,
+  ] = await Promise.all([
+    Vehicle.countDocuments({ seller: sellerId }),
+    Vehicle.countDocuments({ seller: sellerId, status: 'draft' }),
+    Vehicle.countDocuments({ seller: sellerId, status: 'pending' }),
+    Vehicle.countDocuments({ seller: sellerId, status: 'published' }),
+    Vehicle.countDocuments({ seller: sellerId, status: 'sold' }),
+    Vehicle.aggregate([
+      { $match: { seller: new mongoose.Types.ObjectId(sellerId) } },
+      { $group: { _id: null, total: { $sum: '$stats.views' } } },
+    ]),
+    Vehicle.aggregate([
+      { $match: { seller: new mongoose.Types.ObjectId(sellerId) } },
+      { $group: { _id: null, total: { $sum: '$stats.favorites' } } },
+    ]),
+    Inquiry.countDocuments({ seller: sellerId }),
+    Viewing.countDocuments({ seller: sellerId }),
+    Viewing.countDocuments({
+      seller: sellerId,
+      bookingStatus: { $nin: ['completed', 'cancelled-by-buyer', 'cancelled-by-seller', 'cancelled-by-admin'] },
+    }),
+  ]);
+
+  // Top 5 most-viewed listings
+  const topListings = await Vehicle.find({ seller: sellerId })
+    .sort({ 'stats.views': -1 })
+    .limit(5)
+    .select('make model year priceAmount priceCurrency stats images status')
+    .lean();
+
+  // Recent enquiries (last 5)
+  const recentEnquiries = await Inquiry.find({ seller: sellerId })
+    .sort({ createdAt: -1 })
+    .limit(5)
+    .populate('vehicle', 'make model year')
+    .lean();
+
+  res.json({
+    data: {
+      listings: {
+        total: totalListings,
+        draft: drafts,
+        pending,
+        published,
+        sold,
+      },
+      engagement: {
+        views: totalViewsResult[0]?.total || 0,
+        favorites: totalFavoritesResult[0]?.total || 0,
+        enquiries: totalEnquiries,
+      },
+      viewings: {
+        total: totalViewings,
+        active: pendingViewings,
+      },
+      topListings,
+      recentEnquiries,
+    },
+  });
+});
+
 module.exports = {
   getPublicSeller,
   getPublicSellerVehicles,
   getMyProfile,
   updateMyProfile,
+  getMyStats,
 };
 
 // =============================================================
