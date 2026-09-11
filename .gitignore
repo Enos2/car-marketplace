@@ -48,3 +48,8 @@ desktop.ini
 .idea/
 *.swp
 *.swo
+
+
+# Local temp files
+login.json
+*.local.json
