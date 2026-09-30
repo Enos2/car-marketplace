@@ -2,6 +2,11 @@
 // =============================================================
 // FILE: frontend/src/pages/VehicleDetail.jsx
 // =============================================================
+// Purpose:
+//   Full vehicle page. Light theme. Right column is a white
+//   card with a shadow. Red primary CTA, black outline
+//   secondary. Price in black.
+// =============================================================
 
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
@@ -33,15 +38,25 @@ export default function VehicleDetail() {
   }, [id]);
 
   if (loading) {
-    return <div className="mx-auto max-w-6xl px-6 py-12 text-sm text-neutral-500">Loading vehicle…</div>;
+    return (
+      <div className="mx-auto max-w-7xl px-6 py-12 text-sm text-zinc-500">
+        Loading vehicle…
+      </div>
+    );
   }
+
   if (error || !vehicle) {
     return (
-      <div className="mx-auto max-w-6xl px-6 py-12">
-        <div className="rounded border border-red-900 bg-red-950/40 p-4 text-sm text-red-300">
+      <div className="mx-auto max-w-7xl px-6 py-12">
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
           {error || 'Vehicle not found'}
         </div>
-        <Link to="/vehicles" className="mt-6 inline-block text-sm text-neutral-400 hover:text-neutral-100">← Back to vehicles</Link>
+        <Link
+          to="/vehicles"
+          className="mt-6 inline-block text-sm font-semibold text-zinc-600 hover:text-zinc-900"
+        >
+          ← Back to vehicles
+        </Link>
       </div>
     );
   }
@@ -50,17 +65,37 @@ export default function VehicleDetail() {
   const primary = images[activeImage] || null;
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-12">
-      <Link to="/vehicles" className="text-sm text-neutral-500 hover:text-neutral-200">← Back to vehicles</Link>
+    <div className="mx-auto max-w-7xl px-6 py-10">
+      <Link
+        to="/vehicles"
+        className="text-xs font-semibold text-zinc-500 hover:text-zinc-900 uppercase tracking-wider"
+      >
+        ← Back to vehicles
+      </Link>
 
       <div className="mt-6 grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-10">
+        {/* ---------- Left ---------- */}
         <div>
           <Reveal>
-            <div className="aspect-[4/3] rounded-lg border border-neutral-800 bg-neutral-900 overflow-hidden">
+            <div className="aspect-4/3 rounded-2xl border border-zinc-200 bg-zinc-100 overflow-hidden">
               {primary ? (
-                <img src={primary.url} alt={`${vehicle.year} ${vehicle.make} ${vehicle.model}`} className="w-full h-full object-cover" />
+                <img
+                  src={primary.url}
+                  alt={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
+                  className="w-full h-full object-cover"
+                />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-sm text-neutral-600">No image</div>
+                <div className="w-full h-full flex flex-col items-center justify-center text-zinc-400">
+                  <span className="text-3xl font-extrabold text-zinc-400">
+                    {vehicle.make}
+                  </span>
+                  <span className="mt-1 text-sm text-zinc-500">
+                    {vehicle.model}
+                  </span>
+                  <span className="mt-6 text-[10px] uppercase tracking-widest text-zinc-400">
+                    Photos coming soon
+                  </span>
+                </div>
               )}
             </div>
           </Reveal>
@@ -68,80 +103,121 @@ export default function VehicleDetail() {
           {images.length > 1 && (
             <div className="mt-3 grid grid-cols-5 gap-2">
               {images.map((img, i) => (
-                <button key={img._id || i} type="button" onClick={() => setActiveImage(i)} className={`aspect-square rounded border overflow-hidden ${i === activeImage ? 'border-emerald-500' : 'border-neutral-800'}`}>
+                <button
+                  key={img._id || i}
+                  type="button"
+                  onClick={() => setActiveImage(i)}
+                  className={`aspect-square rounded-lg border-2 overflow-hidden transition-colors ${
+                    i === activeImage
+                      ? 'border-brand-500'
+                      : 'border-zinc-200 hover:border-zinc-400'
+                  }`}
+                >
                   <img src={img.url} alt="" className="w-full h-full object-cover" />
                 </button>
               ))}
             </div>
           )}
 
-          <section className="mt-10">
-            <h2 className="text-lg font-medium tracking-tight">Description</h2>
-            <p className="mt-3 text-sm text-neutral-300 whitespace-pre-line">
+          <section className="mt-12">
+            <h2 className="text-2xl font-extrabold text-zinc-900">Description</h2>
+            <p className="mt-4 text-base text-zinc-700 whitespace-pre-line leading-relaxed">
               {vehicle.description || 'No description provided.'}
             </p>
           </section>
 
           {vehicle.features?.length > 0 && (
-            <section className="mt-10">
-              <h2 className="text-lg font-medium tracking-tight">Features</h2>
-              <ul className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2 text-sm text-neutral-400">
+            <section className="mt-12">
+              <h2 className="text-2xl font-extrabold text-zinc-900">Features</h2>
+              <ul className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-2 text-sm text-zinc-700">
                 {vehicle.features.map((f, i) => (
-                  <li key={i} className="border border-neutral-800 rounded px-3 py-2">{f}</li>
+                  <li
+                    key={i}
+                    className="border border-zinc-200 rounded-lg px-3 py-2 bg-white"
+                  >
+                    {f}
+                  </li>
                 ))}
               </ul>
             </section>
           )}
 
-          <section className="mt-10">
-            <h2 className="text-lg font-medium tracking-tight">Specifications</h2>
-            <dl className="mt-3 grid grid-cols-2 gap-y-3 text-sm">
+          <section className="mt-12">
+            <h2 className="text-2xl font-extrabold text-zinc-900">
+              Specifications
+            </h2>
+            <dl className="mt-4 grid grid-cols-2 gap-y-5 gap-x-6 text-sm">
               <Spec label="Make" value={vehicle.make} />
               <Spec label="Model" value={vehicle.model} />
               {vehicle.trim && <Spec label="Trim" value={vehicle.trim} />}
               <Spec label="Year" value={vehicle.year} />
-              <Spec label="Mileage" value={`${vehicle.mileage?.toLocaleString('en-KE')} ${vehicle.mileageUnit}`} />
+              <Spec
+                label="Mileage"
+                value={`${vehicle.mileage?.toLocaleString('en-KE')} ${vehicle.mileageUnit}`}
+              />
               <Spec label="Condition" value={cap(vehicle.condition)} />
               <Spec label="Body type" value={cap(vehicle.bodyType)} />
               <Spec label="Fuel" value={cap(vehicle.fuelType)} />
               <Spec label="Transmission" value={cap(vehicle.transmission)} />
-              <Spec label="Location" value={[vehicle.location?.city, vehicle.location?.county].filter(Boolean).join(', ')} />
+              <Spec
+                label="Location"
+                value={[vehicle.location?.city, vehicle.location?.county]
+                  .filter(Boolean)
+                  .join(', ')}
+              />
             </dl>
           </section>
         </div>
 
+        {/* ---------- Right: price + actions ---------- */}
         <aside className="lg:sticky lg:top-24 self-start">
           <Reveal delay={80}>
-            <div className="rounded-lg border border-neutral-800 bg-neutral-900 p-6">
-              <h1 className="text-2xl font-semibold tracking-tight">
+            <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-[0_8px_28px_-12px_rgba(0,0,0,0.15)]">
+              <h1 className="text-2xl font-extrabold text-zinc-900 leading-tight">
                 {vehicle.year} {vehicle.make} {vehicle.model}
                 {vehicle.trim ? ` ${vehicle.trim}` : ''}
               </h1>
-              <p className="mt-1 text-sm text-neutral-400">
+              <p className="mt-2 text-sm text-zinc-500">
                 {vehicle.location?.city}
                 {vehicle.location?.county ? `, ${vehicle.location.county}` : ''}
               </p>
 
-              <p className="mt-5 text-3xl font-semibold text-emerald-400">
+              <p className="mt-6 text-3xl font-extrabold text-zinc-900 tracking-tight">
                 {formatPrice(vehicle.priceAmount, vehicle.priceCurrency)}
               </p>
-              {vehicle.negotiable && <p className="mt-1 text-xs text-neutral-500">Negotiable</p>}
+              {vehicle.negotiable && (
+                <p className="mt-1 text-xs font-semibold text-brand-500 uppercase tracking-wider">
+                  Negotiable
+                </p>
+              )}
 
               <div className="mt-6 space-y-2">
-                <Link to={`/vehicles/${vehicle._id}/book`} className="block text-center rounded bg-emerald-500 text-neutral-950 py-2.5 text-sm font-medium hover:bg-emerald-400 transition-colors">
+                <Link
+                  to={`/vehicles/${vehicle._id}/book`}
+                  className="block text-center rounded-full bg-brand-500 text-white py-3 text-sm font-semibold hover:bg-brand-hover transition-colors"
+                >
                   Book a viewing
                 </Link>
-                <Link to={`/vehicles/${vehicle._id}/contact`} className="block text-center rounded border border-neutral-700 py-2.5 text-sm font-medium text-neutral-200 hover:border-neutral-500 transition-colors">
+                <Link
+                  to={`/vehicles/${vehicle._id}/contact`}
+                  className="block text-center rounded-full border-2 border-zinc-900 text-zinc-900 py-3 text-sm font-semibold hover:bg-zinc-900 hover:text-white transition-colors"
+                >
                   Contact seller
                 </Link>
               </div>
 
               {vehicle.seller && (
-                <div className="mt-6 pt-6 border-t border-neutral-800">
-                  <p className="text-xs uppercase tracking-wide text-neutral-500">Seller</p>
-                  <p className="mt-2 text-sm text-neutral-200">{vehicle.seller.name}</p>
+                <div className="mt-6 pt-6 border-t border-zinc-200">
+                  <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+                    Seller
+                  </p>
+                  <p className="mt-2 text-base font-medium text-zinc-900">
+                    {vehicle.seller.name}
+                  </p>
                   {vehicle.seller.verificationStatus === 'verified' && (
-                    <p className="mt-1 text-xs text-emerald-400">Verified seller</p>
+                    <p className="mt-1 text-xs font-semibold text-emerald-700 uppercase tracking-wider">
+                      ✓ Verified seller
+                    </p>
                   )}
                 </div>
               )}
@@ -156,8 +232,10 @@ export default function VehicleDetail() {
 function Spec({ label, value }) {
   return (
     <div>
-      <dt className="text-neutral-500 text-xs uppercase tracking-wide">{label}</dt>
-      <dd className="text-neutral-200 mt-0.5">{value || '—'}</dd>
+      <dt className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+        {label}
+      </dt>
+      <dd className="text-zinc-900 mt-1 text-base">{value || '—'}</dd>
     </div>
   );
 }

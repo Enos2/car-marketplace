@@ -1,6 +1,9 @@
 // =============================================================
 // FILE: frontend/src/pages/SignIn.jsx
 // =============================================================
+// Purpose:
+//   Login form on the light theme.
+// =============================================================
 
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -31,30 +34,68 @@ export default function SignIn() {
 
   return (
     <div className="mx-auto max-w-md px-6 py-16">
-      <h1 className="text-2xl font-semibold tracking-tight">Sign in</h1>
-      <p className="mt-1 text-sm text-neutral-400">Enter your credentials to continue.</p>
+      <h1 className="text-3xl font-extrabold text-zinc-900">Sign in</h1>
+      <p className="mt-2 text-sm text-zinc-500">
+        Enter your credentials to continue.
+      </p>
 
-      <form onSubmit={handleSubmit} className="mt-8 space-y-4">
+      <form onSubmit={handleSubmit} className="mt-8 space-y-5">
         <div>
-          <label htmlFor="email" className="block text-xs uppercase tracking-wide text-neutral-400 mb-1.5">Email</label>
-          <input id="email" type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full rounded border border-neutral-800 bg-neutral-900 px-3 py-2 text-sm focus:outline-none focus:border-neutral-600" />
+          <label
+            htmlFor="email"
+            className="block text-xs font-semibold text-zinc-700 uppercase tracking-wider mb-2"
+          >
+            Email
+          </label>
+          <input
+            id="email"
+            type="email"
+            required
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:border-brand-500"
+          />
         </div>
+
         <div>
-          <label htmlFor="password" className="block text-xs uppercase tracking-wide text-neutral-400 mb-1.5">Password</label>
-          <input id="password" type="password" required autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full rounded border border-neutral-800 bg-neutral-900 px-3 py-2 text-sm focus:outline-none focus:border-neutral-600" />
+          <label
+            htmlFor="password"
+            className="block text-xs font-semibold text-zinc-700 uppercase tracking-wider mb-2"
+          >
+            Password
+          </label>
+          <input
+            id="password"
+            type="password"
+            required
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:border-brand-500"
+          />
         </div>
 
         {error && (
-          <div className="rounded border border-red-900 bg-red-950/40 p-3 text-xs text-red-300">{error}</div>
+          <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+            {error}
+          </div>
         )}
 
-        <button type="submit" disabled={submitting} className="w-full rounded bg-emerald-500 text-neutral-950 py-2.5 text-sm font-medium hover:bg-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+        <button
+          type="submit"
+          disabled={submitting}
+          className="w-full rounded-full bg-brand-500 text-white py-3 text-sm font-semibold hover:bg-brand-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
           {submitting ? 'Signing in…' : 'Sign in'}
         </button>
       </form>
 
-      <p className="mt-6 text-sm text-neutral-400">
-        Don&apos;t have an account? <Link to="/signup" className="text-neutral-100 hover:underline">Create one</Link>
+      <p className="mt-6 text-sm text-zinc-500">
+        Don&apos;t have an account?{' '}
+        <Link to="/signup" className="font-semibold text-brand-500 hover:text-brand-hover">
+          Create one
+        </Link>
       </p>
     </div>
   );

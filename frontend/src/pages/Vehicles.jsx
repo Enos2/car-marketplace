@@ -2,6 +2,9 @@
 // =============================================================
 // FILE: frontend/src/pages/Vehicles.jsx
 // =============================================================
+// Purpose:
+//   Searchable, filterable vehicle list. Light theme inputs.
+// =============================================================
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { vehicleApi } from '../services/api';
@@ -70,11 +73,11 @@ export default function Vehicles() {
   }, []);
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-12">
+    <div className="mx-auto max-w-7xl px-6 py-10">
       <Reveal>
         <div className="mb-8">
-          <h1 className="text-3xl font-semibold tracking-tight">Vehicles</h1>
-          <p className="mt-1 text-sm text-neutral-400">
+          <h1 className="text-4xl font-extrabold text-zinc-900">Browse vehicles</h1>
+          <p className="mt-1 text-sm text-zinc-500">
             {loading ? 'Loading…' : `${total} listings`}
           </p>
         </div>
@@ -90,12 +93,12 @@ export default function Vehicles() {
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               placeholder="Search make, model, keyword…"
-              className="flex-1 rounded border border-neutral-800 bg-neutral-900 px-3 py-2 text-sm focus:outline-none focus:border-neutral-600"
+              className="flex-1 rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:border-brand-500"
             />
             <select
               value={sort}
               onChange={(e) => setSort(e.target.value)}
-              className="rounded border border-neutral-800 bg-neutral-900 px-3 py-2 text-sm focus:outline-none focus:border-neutral-600"
+              className="rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm text-zinc-900 focus:outline-none focus:border-brand-500"
             >
               <option value="newest">Newest</option>
               <option value="price-asc">Price: low to high</option>
@@ -105,13 +108,13 @@ export default function Vehicles() {
           </div>
 
           {error && (
-            <div className="rounded border border-red-900 bg-red-950/40 p-4 text-sm text-red-300">
+            <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
               Failed to load vehicles: {error}
             </div>
           )}
 
           {!error && !loading && items.length === 0 && (
-            <div className="rounded border border-neutral-800 bg-neutral-900 p-8 text-center text-sm text-neutral-400">
+            <div className="rounded-lg border border-zinc-200 bg-white p-10 text-center text-sm text-zinc-500">
               No vehicles match your filters.
             </div>
           )}

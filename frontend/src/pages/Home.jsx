@@ -1,6 +1,10 @@
 // =============================================================
 // FILE: frontend/src/pages/Home.jsx
 // =============================================================
+// Purpose:
+//   Home with a clean hero and vehicle grids. Matches the
+//   restrained white aesthetic of the reference sites.
+// =============================================================
 
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -18,7 +22,7 @@ export default function Home() {
     let cancelled = false;
     Promise.all([
       vehicleApi.list({ limit: 3, sort: 'newest' }),
-      vehicleApi.list({ limit: 9, sort: 'newest' }),
+      vehicleApi.list({ limit: 6, sort: 'newest' }),
     ])
       .then(([f, l]) => {
         if (cancelled) return;
@@ -32,88 +36,108 @@ export default function Home() {
 
   return (
     <>
-      <section className="border-b border-neutral-800">
-        <div className="mx-auto max-w-6xl px-6 py-20">
+      {/* ---------- Hero ---------- */}
+      <section className="bg-white border-b border-zinc-100">
+        <div className="mx-auto max-w-7xl px-6 py-16 lg:py-20">
           <Reveal>
-            <h1 className="text-4xl sm:text-5xl font-semibold tracking-tight max-w-2xl">
-              Find the right vehicle in Kenya.
+            <h1 className="text-5xl sm:text-6xl font-extrabold text-zinc-900 max-w-3xl leading-[1.02] tracking-tight">
+              Find your next car in Kenya.
             </h1>
           </Reveal>
           <Reveal delay={60}>
-            <p className="mt-4 text-neutral-400 max-w-xl text-base">
-              Browse listings from dealers and private sellers. Compare prices,
-              contact sellers, and book a viewing before you buy.
+            <p className="mt-5 text-lg text-zinc-600 max-w-xl">
+              Browse verified listings from dealers and private sellers.
+              Compare prices, contact sellers, and book a viewing before you buy.
             </p>
           </Reveal>
           <Reveal delay={120}>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link to="/vehicles" className="rounded bg-emerald-500 text-neutral-950 px-5 py-2.5 text-sm font-medium hover:bg-emerald-400 transition-colors">
+              <Link
+                to="/vehicles"
+                className="rounded-full bg-brand-500 text-white px-7 py-3 text-sm font-semibold hover:bg-brand-hover transition-colors"
+              >
                 Browse vehicles
               </Link>
-              <Link to="/signup" className="rounded border border-neutral-700 px-5 py-2.5 text-sm font-medium text-neutral-200 hover:border-neutral-500 transition-colors">
-                Sell a vehicle
+              <Link
+                to="/signup"
+                className="rounded-full border-2 border-zinc-900 text-zinc-900 px-7 py-3 text-sm font-semibold hover:bg-zinc-900 hover:text-white transition-colors"
+              >
+                Sell a car
               </Link>
             </div>
           </Reveal>
         </div>
       </section>
 
-      {error && (
-        <section className="mx-auto max-w-6xl px-6 py-8">
-          <div className="rounded border border-red-900 bg-red-950/40 p-4 text-sm text-red-300">
-            Failed to load vehicles: {error}
+      {/* ---------- Featured ---------- */}
+      {!error && featured.length > 0 && (
+        <section className="bg-white">
+          <div className="mx-auto max-w-7xl px-6 py-14">
+            <Reveal>
+              <div className="mb-8">
+                <h2 className="text-3xl font-extrabold text-zinc-900">
+                  Featured vehicles
+                </h2>
+                <p className="mt-2 text-sm text-zinc-500">
+                  Hand-picked listings from trusted sellers.
+                </p>
+              </div>
+            </Reveal>
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {featured.map((v, i) => (
+                <Reveal key={v._id} delay={i * 60}>
+                  <VehicleCard vehicle={v} />
+                </Reveal>
+              ))}
+            </div>
           </div>
         </section>
       )}
 
-      {!error && featured.length > 0 && (
-        <section className="mx-auto max-w-6xl px-6 py-12">
+      {/* ---------- Latest ---------- */}
+      <section className="bg-zinc-50 border-y border-zinc-100">
+        <div className="mx-auto max-w-7xl px-6 py-14">
           <Reveal>
-            <div className="flex items-end justify-between mb-6">
+            <div className="flex items-end justify-between mb-8">
               <div>
-                <h2 className="text-2xl font-semibold tracking-tight">Featured</h2>
-                <p className="mt-1 text-sm text-neutral-400">Hand-picked listings from trusted sellers.</p>
+                <h2 className="text-3xl font-extrabold text-zinc-900">
+                  Latest listings
+                </h2>
+                <p className="mt-2 text-sm text-zinc-500">
+                  {loading ? 'Loading…' : `${latest.length} newest vehicles`}
+                </p>
               </div>
+              <Link
+                to="/vehicles"
+                className="text-sm font-semibold text-brand-500 hover:text-brand-hover"
+              >
+                View all →
+              </Link>
             </div>
           </Reveal>
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {featured.map((v, i) => (
-              <Reveal key={v._id} delay={i * 40}>
-                <VehicleCard vehicle={v} />
-              </Reveal>
-            ))}
-          </div>
-        </section>
-      )}
 
-      <section className="mx-auto max-w-6xl px-6 py-12">
-        <Reveal>
-          <div className="flex items-end justify-between mb-6">
-            <div>
-              <h2 className="text-2xl font-semibold tracking-tight">Latest listings</h2>
-              <p className="mt-1 text-sm text-neutral-400">
-                {loading ? 'Loading…' : `${latest.length} of our newest vehicles`}
-              </p>
+          {error && (
+            <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+              Failed to load vehicles: {error}
             </div>
-            <Link to="/vehicles" className="text-sm text-neutral-400 hover:text-neutral-100">View all</Link>
-          </div>
-        </Reveal>
+          )}
 
-        {!loading && latest.length === 0 && (
-          <div className="rounded border border-neutral-800 bg-neutral-900 p-8 text-center text-sm text-neutral-400">
-            No vehicles published yet.
-          </div>
-        )}
+          {!loading && !error && latest.length === 0 && (
+            <div className="rounded-lg border border-zinc-200 bg-white p-10 text-center text-sm text-zinc-500">
+              No vehicles published yet.
+            </div>
+          )}
 
-        {latest.length > 0 && (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {latest.map((v, i) => (
-              <Reveal key={v._id} delay={(i % 3) * 40}>
-                <VehicleCard vehicle={v} />
-              </Reveal>
-            ))}
-          </div>
-        )}
+          {latest.length > 0 && (
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {latest.map((v, i) => (
+                <Reveal key={v._id} delay={(i % 3) * 60}>
+                  <VehicleCard vehicle={v} />
+                </Reveal>
+              ))}
+            </div>
+          )}
+        </div>
       </section>
     </>
   );

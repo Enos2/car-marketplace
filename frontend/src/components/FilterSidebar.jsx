@@ -1,6 +1,10 @@
 // =============================================================
 // FILE: frontend/src/components/FilterSidebar.jsx
 // =============================================================
+// Purpose:
+//   Filter sidebar. Light theme inputs (this was the black-box
+//   bug — inputs were left with the old dark theme classes).
+// =============================================================
 
 import { useEffect, useState } from 'react';
 import api from '../services/api';
@@ -24,7 +28,7 @@ export default function FilterSidebar({ filters, onChange, onReset }) {
   if (!meta) {
     return (
       <aside className="w-full lg:w-64 shrink-0">
-        <div className="text-sm text-neutral-500">Loading filters…</div>
+        <div className="text-sm text-zinc-500">Loading filters…</div>
       </aside>
     );
   }
@@ -32,11 +36,11 @@ export default function FilterSidebar({ filters, onChange, onReset }) {
   return (
     <aside className="w-full lg:w-64 shrink-0">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-sm uppercase tracking-wide text-neutral-400">Filters</h2>
+        <h2 className="text-sm font-semibold text-zinc-900 uppercase tracking-wider">Filters</h2>
         <button
           type="button"
           onClick={onReset}
-          className="text-xs text-neutral-500 hover:text-neutral-200"
+          className="text-xs text-zinc-500 hover:text-brand-500 font-medium"
         >
           Reset
         </button>
@@ -51,18 +55,46 @@ export default function FilterSidebar({ filters, onChange, onReset }) {
         <Select label="County" value={filters.county || ''} onChange={(v) => set('county', v)} options={meta.counties || []} />
 
         <div>
-          <label className="block text-xs uppercase tracking-wide text-neutral-400 mb-1.5">Year range</label>
+          <label className="block text-xs font-semibold text-zinc-700 uppercase tracking-wider mb-2">
+            Year range
+          </label>
           <div className="flex gap-2">
-            <input type="number" placeholder="Min" value={filters.minYear || ''} onChange={(e) => set('minYear', e.target.value)} className="w-full rounded border border-neutral-800 bg-neutral-900 px-2 py-1.5 text-sm focus:outline-none focus:border-neutral-600" />
-            <input type="number" placeholder="Max" value={filters.maxYear || ''} onChange={(e) => set('maxYear', e.target.value)} className="w-full rounded border border-neutral-800 bg-neutral-900 px-2 py-1.5 text-sm focus:outline-none focus:border-neutral-600" />
+            <input
+              type="number"
+              placeholder="Min"
+              value={filters.minYear || ''}
+              onChange={(e) => set('minYear', e.target.value)}
+              className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 focus:outline-none focus:border-brand-500"
+            />
+            <input
+              type="number"
+              placeholder="Max"
+              value={filters.maxYear || ''}
+              onChange={(e) => set('maxYear', e.target.value)}
+              className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 focus:outline-none focus:border-brand-500"
+            />
           </div>
         </div>
 
         <div>
-          <label className="block text-xs uppercase tracking-wide text-neutral-400 mb-1.5">Price (KES major units)</label>
+          <label className="block text-xs font-semibold text-zinc-700 uppercase tracking-wider mb-2">
+            Price (KES)
+          </label>
           <div className="flex gap-2">
-            <input type="number" placeholder="Min" value={filters.minPriceMajor || ''} onChange={(e) => set('minPriceMajor', e.target.value)} className="w-full rounded border border-neutral-800 bg-neutral-900 px-2 py-1.5 text-sm focus:outline-none focus:border-neutral-600" />
-            <input type="number" placeholder="Max" value={filters.maxPriceMajor || ''} onChange={(e) => set('maxPriceMajor', e.target.value)} className="w-full rounded border border-neutral-800 bg-neutral-900 px-2 py-1.5 text-sm focus:outline-none focus:border-neutral-600" />
+            <input
+              type="number"
+              placeholder="Min"
+              value={filters.minPriceMajor || ''}
+              onChange={(e) => set('minPriceMajor', e.target.value)}
+              className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 focus:outline-none focus:border-brand-500"
+            />
+            <input
+              type="number"
+              placeholder="Max"
+              value={filters.maxPriceMajor || ''}
+              onChange={(e) => set('maxPriceMajor', e.target.value)}
+              className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 focus:outline-none focus:border-brand-500"
+            />
           </div>
         </div>
       </div>
@@ -76,10 +108,18 @@ function Select({ label, value, onChange, options }) {
   );
   return (
     <div>
-      <label className="block text-xs uppercase tracking-wide text-neutral-400 mb-1.5">{label}</label>
-      <select value={value} onChange={(e) => onChange(e.target.value)} className="w-full rounded border border-neutral-800 bg-neutral-900 px-2 py-1.5 text-sm focus:outline-none focus:border-neutral-600">
+      <label className="block text-xs font-semibold text-zinc-700 uppercase tracking-wider mb-2">
+        {label}
+      </label>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 focus:outline-none focus:border-brand-500"
+      >
         <option value="">Any</option>
-        {normalized.map((o) => (<option key={o.value} value={o.value}>{o.label}</option>))}
+        {normalized.map((o) => (
+          <option key={o.value} value={o.value}>{o.label}</option>
+        ))}
       </select>
     </div>
   );
