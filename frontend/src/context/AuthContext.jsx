@@ -4,8 +4,9 @@
 // FILE: frontend/src/context/AuthContext.jsx
 // =============================================================
 // Purpose:
-//   Global auth state. On mount, asks /auth/me to see if a valid
-//   session cookie is present. Exposes login/register/logout.
+//   Global auth state. Reads /auth/me once on mount. Only sets
+//   user=null if the endpoint explicitly returns no user OR a
+//   401. Any other error is logged but does NOT clear the user.
 // =============================================================
 
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
@@ -19,10 +20,17 @@ export function AuthProvider({ children }) {
 
   const refresh = useCallback(async () => {
     try {
-      const { user: me } = await authApi.me();
-      setUser(me || null);
-    } catch {
-      setUser(null);
+      const res = await authApi.me();
+      // Backend returns either { user } or { user: null }
+      setUser(res?.user ?? null);
+    } catch (err) {
+      // 401 = no session. That is not an error — it means "logged out".
+      // Any other error is genuine — do not wipe the user.
+      if (err?.status === 401 || err?.status === 0) {
+        setUser(null);
+      } else {
+        console.warn('[auth] refresh failed:', err?.message || err);
+      }
     } finally {
       setLoading(false);
     }

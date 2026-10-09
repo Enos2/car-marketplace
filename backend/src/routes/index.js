@@ -2,8 +2,7 @@
 // FILE: backend/src/routes/index.js
 // =============================================================
 // Purpose:
-//   Single mount point for all API routers. Mounted under /api
-//   by app.js.
+//   Single mount point for all API routers.
 // =============================================================
 
 'use strict';
@@ -23,43 +22,31 @@ const sellerViewingRoutes = require('./sellerViewingRoutes');
 const savedSearchRoutes = require('./savedSearchRoutes');
 const reportRoutes = require('./reportRoutes');
 const metaRoutes = require('./metaRoutes');
+const auctionRoutes = require('./auctionRoutes');
 
 const { createInquiry } = require('../controllers/inquiryController');
-const {
-  getViewingSlots,
-  createViewing,
-} = require('../controllers/viewingController');
+const { getViewingSlots, createViewing } = require('../controllers/viewingController');
 
 const { createRules } = require('../validators/inquiryValidators');
-const {
-  createViewingRules,
-  slotQueryRules,
-} = require('../validators/viewingValidators');
+const { createViewingRules, slotQueryRules } = require('../validators/viewingValidators');
 
 const validate = require('../middleware/validate');
 const { requireAuth } = require('../middleware/auth');
-const {
-  inquiryLimiter,
-  bookingLimiter,
-} = require('../middleware/rateLimiters');
+const { inquiryLimiter, bookingLimiter } = require('../middleware/rateLimiters');
 
 const router = express.Router();
 
-// ----- Deep health check (spec §28) --------------------------
-// Reports overall status, process uptime, and DB connectivity.
-// Returns 503 if the DB is unavailable so orchestrators can act.
+// Health
 router.get('/health', async (req, res) => {
-  const dbState = mongoose.connection.readyState; // 1 = connected
-  const dbOk = dbState === 1;
-  const status = dbOk ? 200 : 503;
-  res.status(status).json({
+  const dbOk = mongoose.connection.readyState === 1;
+  res.status(dbOk ? 200 : 503).json({
     ok: dbOk,
     uptime: process.uptime(),
     db: dbOk ? 'connected' : 'disconnected',
   });
 });
 
-// ----- Feature routers ---------------------------------------
+// Feature routers
 router.use('/auth', authRoutes);
 router.use('/vehicles', vehicleRoutes);
 router.use('/inquiries', inquiryRoutes);
@@ -70,36 +57,16 @@ router.use('/viewings', viewingRoutes);
 router.use('/saved-searches', savedSearchRoutes);
 router.use('/reports', reportRoutes);
 router.use('/meta', metaRoutes);
+router.use('/auctions', auctionRoutes);
 
-// Seller viewing sub-routes: mount under /sellers/me/... BEFORE
-// the sellerRoutes so /me/... takes precedence over /:id.
+// Seller sub-routes before generic /:id
 router.use('/sellers/me', sellerViewingRoutes);
 router.use('/sellers', sellerRoutes);
 
-// ----- Nested: vehicle-scoped actions ------------------------
-router.post(
-  '/vehicles/:vehicleId/inquiries',
-  inquiryLimiter,
-  createRules,
-  validate,
-  createInquiry
-);
-
-router.get(
-  '/vehicles/:id/viewing-slots',
-  slotQueryRules,
-  validate,
-  getViewingSlots
-);
-
-router.post(
-  '/vehicles/:id/viewings',
-  requireAuth,
-  bookingLimiter,
-  createViewingRules,
-  validate,
-  createViewing
-);
+// Nested actions
+router.post('/vehicles/:vehicleId/inquiries', inquiryLimiter, createRules, validate, createInquiry);
+router.get('/vehicles/:id/viewing-slots', slotQueryRules, validate, getViewingSlots);
+router.post('/vehicles/:id/viewings', requireAuth, bookingLimiter, createViewingRules, validate, createViewing);
 
 module.exports = router;
 

@@ -2,8 +2,9 @@
 // FILE: frontend/src/components/Layout.jsx
 // =============================================================
 // Purpose:
-//   Header: logo + "Car Marketplace" wordmark, red bottom border,
-//   proper text colors. Black footer.
+//   Site chrome. White header with logo, red bottom border,
+//   black footer. Nav includes Auctions. Admin dropdown
+//   includes auction moderation.
 // =============================================================
 
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
@@ -39,25 +40,33 @@ export default function Layout() {
             </span>
           </Link>
 
-          <nav className="hidden md:flex items-center gap-7">
+          <nav className="hidden md:flex items-center gap-6">
             <NavLink to="/vehicles" className={navLinkClass}>
               Browse
             </NavLink>
+
+            <NavLink to="/auctions" className={navLinkClass}>
+              Auctions
+            </NavLink>
+
             {user && (
               <NavLink to="/favorites" className={navLinkClass}>
                 Saved
               </NavLink>
             )}
+
             {user && (
               <NavLink to="/viewings" className={navLinkClass}>
                 My viewings
               </NavLink>
             )}
+
             {isSeller && (
               <NavLink to="/seller" className={navLinkClass}>
                 Dashboard
               </NavLink>
             )}
+
             {isAdmin && (
               <NavLink to="/admin" className={navLinkClass}>
                 Admin
@@ -138,10 +147,10 @@ export default function Layout() {
               </h4>
               <ul className="space-y-3 text-sm">
                 <li><Link to="/vehicles" className="hover:text-white">All vehicles</Link></li>
+                <li><Link to="/auctions" className="hover:text-white">Live auctions</Link></li>
                 <li><Link to="/vehicles?bodyType=suv" className="hover:text-white">SUVs</Link></li>
                 <li><Link to="/vehicles?bodyType=sedan" className="hover:text-white">Sedans</Link></li>
                 <li><Link to="/vehicles?bodyType=pickup" className="hover:text-white">Pickups</Link></li>
-                <li><Link to="/vehicles?condition=new" className="hover:text-white">New arrivals</Link></li>
               </ul>
             </div>
 
@@ -151,9 +160,9 @@ export default function Layout() {
               </h4>
               <ul className="space-y-3 text-sm">
                 <li><Link to="/signup" className="hover:text-white">List a vehicle</Link></li>
+                <li><Link to="/seller/auctions/new" className="hover:text-white">Submit for auction</Link></li>
                 <li><Link to="/seller" className="hover:text-white">Seller dashboard</Link></li>
                 <li><Link to="/help" className="hover:text-white">Selling guide</Link></li>
-                <li><Link to="/help" className="hover:text-white">Pricing</Link></li>
               </ul>
             </div>
 

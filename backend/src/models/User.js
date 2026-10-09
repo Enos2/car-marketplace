@@ -2,17 +2,8 @@
 // FILE: backend/src/models/User.js
 // =============================================================
 // Purpose:
-//   User account model. Covers buyers, sellers/dealers, admins.
-//   Passwords hashed with bcrypt; never returned by default.
-//
-// Roles:
-//   - 'buyer'   : browse, favorite, enquire
-//   - 'seller'  : create listings, manage inquiries
-//   - 'admin'   : moderate listings, manage users
-//
-// Security:
-//   passwordHash has `select:false` so it never leaves the DB
-//   unless explicitly requested.
+//   User account model. Adds account lockout fields for the
+//   security pass: failedLoginAttempts, lockedUntil.
 // =============================================================
 
 'use strict';
@@ -43,14 +34,12 @@ const userSchema = new Schema(
 
     role: { type: String, enum: ROLES, default: 'buyer', index: true },
 
-    // Seller verification status (spec §20). Only meaningful for role=seller.
     verificationStatus: {
       type: String,
       enum: ['unverified', 'pending', 'verified', 'rejected'],
       default: 'unverified',
     },
 
-    // Account status
     status: {
       type: String,
       enum: ['active', 'suspended'],
@@ -58,7 +47,6 @@ const userSchema = new Schema(
       index: true,
     },
 
-    // Contact preferences (spec §8, §21)
     contactPreferences: {
       allowEnquiries: { type: Boolean, default: true },
       showEmail: { type: Boolean, default: false },
@@ -67,15 +55,29 @@ const userSchema = new Schema(
       emailNotifications: { type: Boolean, default: true },
     },
 
+    // Seller viewing availability
+    viewingAvailability: {
+      days: { type: [Number], default: undefined },
+      windows: {
+        type: [{ start: { type: String }, end: { type: String } }],
+        default: undefined,
+      },
+      slotMinutes: { type: Number, default: 60, min: 15, max: 480 },
+      location: { type: String, trim: true, default: '' },
+      feeMinor: { type: Number, default: 0, min: 0 },
+      feeCurrency: { type: String, enum: ['KES', 'USD'], default: 'KES' },
+    },
+
     lastLoginAt: { type: Date, default: null },
+
+    // ---- Security: lockout -----------------------------------
+    failedLoginAttempts: { type: Number, default: 0, min: 0 },
+    lockedUntil: { type: Date, default: null },
+    lastFailedAt: { type: Date, default: null },
   },
-  {
-    timestamps: true,
-    versionKey: false,
-  }
+  { timestamps: true, versionKey: false }
 );
 
-// Hash password before save when set/changed.
 userSchema.pre('save', async function hashPassword() {
   if (!this.isModified('passwordHash')) return;
   const salt = await bcrypt.genSalt(12);
@@ -86,9 +88,31 @@ userSchema.methods.verifyPassword = function verifyPassword(plain) {
   return bcrypt.compare(plain, this.passwordHash);
 };
 
+userSchema.methods.isLocked = function isLocked() {
+  return this.lockedUntil && this.lockedUntil > new Date();
+};
+
+userSchema.methods.registerFailedLogin = function registerFailedLogin() {
+  this.failedLoginAttempts = (this.failedLoginAttempts || 0) + 1;
+  this.lastFailedAt = new Date();
+  if (this.failedLoginAttempts >= 5) {
+    // lock for 15 minutes after 5 failures
+    this.lockedUntil = new Date(Date.now() + 15 * 60 * 1000);
+  }
+};
+
+userSchema.methods.clearFailedLogins = function clearFailedLogins() {
+  this.failedLoginAttempts = 0;
+  this.lockedUntil = null;
+  this.lastFailedAt = null;
+};
+
 userSchema.methods.toJSON = function toJSON() {
   const obj = this.toObject({ virtuals: false });
   delete obj.passwordHash;
+  delete obj.failedLoginAttempts;
+  delete obj.lockedUntil;
+  delete obj.lastFailedAt;
   return obj;
 };
 

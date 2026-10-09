@@ -2,11 +2,8 @@
 // FILE: backend/src/app.js
 // =============================================================
 // Purpose:
-//   Express application entry point. Loads env, registers global
-//   middleware, mounts all API routes under /api, serves uploaded
-//   media in development, connects to MongoDB, starts the HTTP
-//   server and the viewing-sweep cron job. Handles graceful
-//   shutdown.
+//   Express entry. Global sanitization middleware, tighter CSP,
+//   attachUser, both crons.
 // =============================================================
 
 'use strict';
@@ -25,36 +22,42 @@ const { connectDB, disconnectDB } = require('./config/db');
 const apiRoutes = require('./routes');
 const notFound = require('./middleware/notFound');
 const errorHandler = require('./middleware/errorHandler');
+const { attachUser } = require('./middleware/auth');
+const { sanitizeBody } = require('./middleware/validate');
 const logger = require('./utils/logger');
 const viewingSweepCron = require('./jobs/viewingSweepCron');
+const auctionSweepCron = require('./jobs/auctionSweepCron');
 
 const app = express();
 
 if (env.isProd) app.set('trust proxy', 1);
 
-// ----- Security headers --------------------------------------
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: 'cross-origin' },
+    contentSecurityPolicy: {
+      useDefaults: true,
+      directives: {
+        "default-src": ["'self'"],
+        "img-src": ["'self'", 'data:', 'https:'],
+        "script-src": ["'self'"],
+        "style-src": ["'self'", "'unsafe-inline'", 'https:'],
+        "font-src": ["'self'", 'https:', 'data:'],
+        "frame-ancestors": ["'self'"],
+        "form-action": ["'self'"],
+        "base-uri": ["'self'"],
+      },
+    },
   })
 );
 
-// ----- CORS --------------------------------------------------
-app.use(
-  cors({
-    origin: env.CLIENT_URL,
-    credentials: true,
-  })
-);
-
-// ----- Body parsers ------------------------------------------
+app.use(cors({ origin: env.CLIENT_URL, credentials: true }));
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
-
-// ----- Cookies -----------------------------------------------
 app.use(cookieParser(env.SESSION_SECRET));
+app.use(sanitizeBody);
+app.use(attachUser);
 
-// ----- Global rate limit -------------------------------------
 app.use(
   rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -64,7 +67,6 @@ app.use(
   })
 );
 
-// ----- Static uploads (dev only) -----------------------------
 if (env.isDev) {
   app.use(
     '/uploads',
@@ -76,27 +78,22 @@ if (env.isDev) {
   );
 }
 
-// ----- API routes --------------------------------------------
 app.use('/api', apiRoutes);
-
-// ----- 404 + error handling ----------------------------------
 app.use(notFound);
 app.use(errorHandler);
 
-// ----- Start server ------------------------------------------
 async function start() {
   await connectDB();
-
   const server = app.listen(env.PORT, () => {
     logger.info('API listening', { port: env.PORT, env: env.NODE_ENV });
   });
-
-  // Start the receipt-review sweep job.
   viewingSweepCron.start();
+  auctionSweepCron.start();
 
   const shutdown = async (signal) => {
     logger.info('Shutting down', { signal });
     viewingSweepCron.stop();
+    auctionSweepCron.stop();
     server.close(async () => {
       await disconnectDB();
       process.exit(0);

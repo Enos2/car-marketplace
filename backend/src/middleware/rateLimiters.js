@@ -2,52 +2,52 @@
 // FILE: backend/src/middleware/rateLimiters.js
 // =============================================================
 // Purpose:
-//   Per-route rate limiters (spec §17). Stricter than the global
-//   limit for auth, uploads, enquiries, and bookings.
+//   Per-route rate limits. authLimiter is now keyed on IP and
+//   capped tighter than before.
 // =============================================================
 
 'use strict';
 
 const rateLimit = require('express-rate-limit');
 
-const standard = {
+const base = {
   standardHeaders: true,
   legacyHeaders: false,
 };
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 20,
+  max: 10,
   message: { error: 'Too many attempts. Try again later.' },
-  ...standard,
+  ...base,
 });
 
 const uploadLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: 60,
-  message: { error: 'Upload limit reached. Try again later.' },
-  ...standard,
+  message: { error: 'Upload limit reached.' },
+  ...base,
 });
 
 const inquiryLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: 15,
-  message: { error: 'Too many enquiries. Try again later.' },
-  ...standard,
+  message: { error: 'Too many enquiries.' },
+  ...base,
 });
 
 const bookingLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
-  max: 10,
-  message: { error: 'Too many booking attempts. Try again later.' },
-  ...standard,
+  max: 20,
+  message: { error: 'Too many booking attempts.' },
+  ...base,
 });
 
 const markViewedLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 120,
-  message: { error: 'Too many requests. Slow down.' },
-  ...standard,
+  message: { error: 'Too many requests.' },
+  ...base,
 });
 
 module.exports = {
