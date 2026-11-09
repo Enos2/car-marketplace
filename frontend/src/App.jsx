@@ -11,6 +11,13 @@ import ContactSeller from './pages/ContactSeller';
 import BookViewing from './pages/BookViewing';
 import MyViewings from './pages/MyViewings';
 import ReceiptView from './pages/ReceiptView';
+import Favorites from './pages/Favorites';
+import SavedSearches from './pages/SavedSearches';
+import ReportListing from './pages/ReportListing';
+import About from './pages/About';
+import Help from './pages/Help';
+import Terms from './pages/Terms';
+import Privacy from './pages/Privacy';
 import SignIn from './pages/SignIn';
 import SignUp from './pages/SignUp';
 import SellerDashboard from './pages/SellerDashboard';
@@ -60,6 +67,13 @@ function RequireAdmin({ children }) {
   return children;
 }
 
+function RequireAuth({ children }) {
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  if (!user) return <Navigate to="/signin" replace />;
+  return children;
+}
+
 export default function App() {
   return (
     <Routes>
@@ -69,12 +83,20 @@ export default function App() {
         <Route path="/vehicles/:id" element={<VehicleDetail />} />
         <Route path="/vehicles/:id/contact" element={<ContactSeller />} />
         <Route path="/vehicles/:id/book" element={<BookViewing />} />
+        <Route path="/vehicles/:id/report" element={<ReportListing />} />
 
         <Route path="/auctions" element={<Auctions />} />
         <Route path="/auctions/:id" element={<AuctionDetail />} />
 
-        <Route path="/viewings" element={<MyViewings />} />
-        <Route path="/viewings/:id/receipt" element={<ReceiptView />} />
+        <Route path="/viewings" element={<RequireAuth><MyViewings /></RequireAuth>} />
+        <Route path="/viewings/:id/receipt" element={<RequireAuth><ReceiptView /></RequireAuth>} />
+        <Route path="/favorites" element={<RequireAuth><Favorites /></RequireAuth>} />
+        <Route path="/saved-searches" element={<RequireAuth><SavedSearches /></RequireAuth>} />
+
+        <Route path="/about" element={<About />} />
+        <Route path="/help" element={<Help />} />
+        <Route path="/terms" element={<Terms />} />
+        <Route path="/privacy" element={<Privacy />} />
 
         <Route path="/signin" element={<SignIn />} />
         <Route path="/signup" element={<SignUp />} />
