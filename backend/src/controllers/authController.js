@@ -20,7 +20,7 @@ const { COOKIE_NAME } = require('../middleware/auth');
 function cookieOptions() {
   return {
     httpOnly: true,
-    sameSite: 'lax',
+    sameSite: env.isProd ? 'none' : 'lax',
     secure: env.isProd,
     path: '/',
     maxAge: 15 * 60 * 1000,
