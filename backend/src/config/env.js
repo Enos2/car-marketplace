@@ -1,10 +1,11 @@
+
 // =============================================================
 // FILE: backend/src/config/env.js
 // =============================================================
 // Purpose:
 //   Validates required environment variables at startup and
-//   exports a typed, frozen env object. Fails fast if any
-//   required variable is missing.
+//   exports a frozen environment configuration object.
+//   Fails fast if required variables are missing.
 // =============================================================
 
 'use strict';
@@ -39,14 +40,23 @@ const OPTIONAL_DEFAULTS = {
 };
 
 function loadEnv() {
-  const missing = REQUIRED.filter((k) => !process.env[k]);
+  const missing = REQUIRED.filter((key) => {
+    const value = process.env[key];
+    return typeof value !== 'string' || value.trim() === '';
+  });
+
   if (missing.length > 0) {
-    console.error(`[env] Missing required variables: ${missing.join(', ')}`);
+    console.error(
+      `[env] Missing required variables: ${missing.join(', ')}`
+    );
     process.exit(1);
   }
 
   for (const [key, value] of Object.entries(OPTIONAL_DEFAULTS)) {
-    if (process.env[key] === undefined || process.env[key] === '') {
+    if (
+      process.env[key] === undefined ||
+      process.env[key].trim() === ''
+    ) {
       process.env[key] = value;
     }
   }
@@ -70,14 +80,24 @@ function loadEnv() {
       10
     ),
 
-    VIEWING_REVIEW_WINDOW_HOURS: parseInt(process.env.VIEWING_REVIEW_WINDOW_HOURS, 10),
-    VIEWING_SWEEP_ENABLED: process.env.VIEWING_SWEEP_ENABLED === 'true',
-    VIEWING_SWEEP_INTERVAL_MINUTES: parseInt(process.env.VIEWING_SWEEP_INTERVAL_MINUTES, 10),
+    VIEWING_REVIEW_WINDOW_HOURS: parseInt(
+      process.env.VIEWING_REVIEW_WINDOW_HOURS,
+      10
+    ),
+    VIEWING_SWEEP_ENABLED:
+      process.env.VIEWING_SWEEP_ENABLED === 'true',
+    VIEWING_SWEEP_INTERVAL_MINUTES: parseInt(
+      process.env.VIEWING_SWEEP_INTERVAL_MINUTES,
+      10
+    ),
 
     PAYMENT_PROVIDER: process.env.PAYMENT_PROVIDER || '',
     PAYMENT_WEBHOOK_SECRET: process.env.PAYMENT_WEBHOOK_SECRET || '',
 
-    RECEIPT_SIGNED_URL_SECRET: process.env.RECEIPT_SIGNED_URL_SECRET || process.env.SESSION_SECRET,
+    RECEIPT_SIGNED_URL_SECRET:
+      process.env.RECEIPT_SIGNED_URL_SECRET ||
+      process.env.SESSION_SECRET,
+
     RECEIPT_SIGNED_URL_EXPIRES_MINUTES: parseInt(
       process.env.RECEIPT_SIGNED_URL_EXPIRES_MINUTES,
       10
@@ -87,7 +107,10 @@ function loadEnv() {
     isDev: process.env.NODE_ENV !== 'production',
   };
 
-  if (env.isProd && env.RECEIPT_SIGNED_URL_SECRET === env.SESSION_SECRET) {
+  if (
+    env.isProd &&
+    env.RECEIPT_SIGNED_URL_SECRET === env.SESSION_SECRET
+  ) {
     console.warn(
       '[env] WARNING: RECEIPT_SIGNED_URL_SECRET is falling back to SESSION_SECRET. Set it explicitly in production.'
     );

@@ -1,16 +1,22 @@
+
 // =============================================================
 // FILE: backend/src/app.js
 // =============================================================
 // Purpose:
-//   Express entry. Global sanitization middleware, tighter CSP,
-//   attachUser, both crons.
+//   Express entry point. Loads the project-root environment file,
+//   configures security middleware, routes, authentication,
+//   sanitization, background jobs, and graceful shutdown.
 // =============================================================
 
 'use strict';
 
-require('dotenv').config();
-
 const path = require('path');
+
+// Load the .env file from the project root, not backend/.
+require('dotenv').config({
+  path: path.resolve(__dirname, '../../.env'),
+});
+
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -30,7 +36,9 @@ const auctionSweepCron = require('./jobs/auctionSweepCron');
 
 const app = express();
 
-if (env.isProd) app.set('trust proxy', 1);
+if (env.isProd) {
+  app.set('trust proxy', 1);
+}
 
 app.use(
   helmet({
@@ -38,14 +46,14 @@ app.use(
     contentSecurityPolicy: {
       useDefaults: true,
       directives: {
-        "default-src": ["'self'"],
-        "img-src": ["'self'", 'data:', 'https:'],
-        "script-src": ["'self'"],
-        "style-src": ["'self'", "'unsafe-inline'", 'https:'],
-        "font-src": ["'self'", 'https:', 'data:'],
-        "frame-ancestors": ["'self'"],
-        "form-action": ["'self'"],
-        "base-uri": ["'self'"],
+        'default-src': ["'self'"],
+        'img-src': ["'self'", 'data:', 'https:'],
+        'script-src': ["'self'"],
+        'style-src': ["'self'", "'unsafe-inline'", 'https:'],
+        'font-src': ["'self'", 'https:', 'data:'],
+        'frame-ancestors': ["'self'"],
+        'form-action': ["'self'"],
+        'base-uri': ["'self'"],
       },
     },
   })
@@ -84,16 +92,23 @@ app.use(errorHandler);
 
 async function start() {
   await connectDB();
+
   const server = app.listen(env.PORT, () => {
-    logger.info('API listening', { port: env.PORT, env: env.NODE_ENV });
+    logger.info('API listening', {
+      port: env.PORT,
+      env: env.NODE_ENV,
+    });
   });
+
   viewingSweepCron.start();
   auctionSweepCron.start();
 
   const shutdown = async (signal) => {
     logger.info('Shutting down', { signal });
+
     viewingSweepCron.stop();
     auctionSweepCron.stop();
+
     server.close(async () => {
       await disconnectDB();
       process.exit(0);
